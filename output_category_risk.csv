@@ -1,0 +1,11 @@
+merchant_category,total_txns,chargeback_count,chargeback_rate_pct,chargeback_amount,risk_rank
+Crypto Exchange,120584,3431,2.845,3042943.16,1
+Travel,120569,1082,0.897,768820.13,2
+Electronics,119720,1499,1.252,533788.79,3
+Gift Cards,120009,2976,2.48,301910.85,4
+Gaming,119713,1988,1.661,146036.79,5
+Fashion,120122,578,0.481,82350.34,6
+Utilities,119745,371,0.31,62231.33,7
+Grocery,119915,354,0.295,31287.87,8
+Food Delivery,119696,435,0.363,25821.54,9
+Subscriptions,119927,538,0.449,23479.3,10

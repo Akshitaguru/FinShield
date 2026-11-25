@@ -1,0 +1,5 @@
+gap_bucket,txn_count,fraud_rate_pct
+<5 min,301,18.272
+5-30 min,1454,4.746
+>1 day,1075799,1.686
+30min-1day,62446,1.68

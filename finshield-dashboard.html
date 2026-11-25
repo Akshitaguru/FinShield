@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FinShield — Fraud Detection Dashboard</title>
+<style>
+:root{
+  --bg:#f5f6fa; --card:#ffffff; --border:#e8eaf0; --text:#12141c; --sub:#5c6270; --muted:#9aa0ad;
+  --accent:#3b5bdb; --accent-bg:#edf1ff;
+  --danger:#d33b3b; --danger-bg:#fdeaea; --warn:#b5790a; --warn-bg:#fff3d6; --good:#1f8a44; --good-bg:#e6f7ec; --info:#2f6fed; --info-bg:#e8f0ff;
+  --shadow:0 1px 2px rgba(20,20,30,.04),0 4px 14px rgba(20,20,30,.05);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;}
+button{font-family:inherit;cursor:pointer;}
+.app{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:100vh;}
+
+/* Sidebar */
+.side{background:#fff;border-right:1px solid var(--border);padding:18px 14px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+.brand{display:flex;align-items:center;gap:10px;padding:0 6px 18px;border-bottom:1px solid var(--border);}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;}
+.brand b{display:block;font-size:14px;}
+.brand span{font-size:10.5px;color:var(--sub);line-height:1.2;display:block;}
+.sec{font-size:10.5px;font-weight:700;letter-spacing:.6px;color:var(--muted);margin:20px 8px 8px;text-transform:uppercase;}
+.nav{display:flex;align-items:center;gap:9px;width:100%;border:none;background:transparent;text-align:left;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:600;color:var(--sub);}
+.nav:hover{background:var(--bg);}
+.nav.active{background:var(--accent-bg);color:var(--accent);}
+.alertrow{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;font-size:13px;color:var(--text);}
+.alertrow .l{display:flex;align-items:center;gap:9px;}
+.dot{width:8px;height:8px;border-radius:50%;}
+.count{font-size:11px;font-weight:700;border-radius:20px;padding:2px 8px;min-width:24px;text-align:center;}
+.c-high{background:var(--danger);color:#fff;}
+.c-med{background:var(--warn-bg);color:var(--warn);}
+.c-rev{background:var(--info-bg);color:var(--info);}
+.user{margin-top:auto;border-top:1px solid var(--border);padding-top:14px;display:flex;align-items:center;gap:10px;}
+.avatar{width:32px;height:32px;border-radius:50%;background:#e4e7ee;color:#424856;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;}
+.user b{font-size:12px;display:block;}
+.user span{font-size:10.5px;color:var(--sub);}
+
+/* Main */
+.main{padding:24px 28px 60px;min-width:0;}
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:20px;}
+.head h1{margin:0;font-size:22px;letter-spacing:-.3px;}
+.head p{margin:4px 0 0;color:var(--sub);font-size:13px;}
+.head .right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.btn{height:34px;padding:0 13px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--text);}
+.btn:hover{background:var(--bg);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:#2f49b8;}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff;}
+.btn.good{background:var(--good);border-color:var(--good);color:#fff;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.live{background:var(--good-bg);color:var(--good);font-size:11px;font-weight:700;border-radius:6px;padding:6px 10px;}
+.live.off{background:#eceef3;color:var(--sub);}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:20px;}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;box-shadow:var(--shadow);display:flex;justify-content:space-between;align-items:center;}
+.kpi .label{font-size:10.5px;font-weight:700;letter-spacing:.4px;color:var(--sub);text-transform:uppercase;}
+.kpi .val{font-size:28px;font-weight:700;margin:6px 0 2px;}
+.kpi .delta{font-size:11px;color:var(--muted);}
+.kicon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr);gap:16px;align-items:start;}
+@media(max-width:1100px){.layout{grid-template-columns:1fr;}}
+@media(max-width:860px){
+  .app{grid-template-columns:1fr;}
+  .side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;padding:12px;}
+  .side .brand{border:none;padding:0;margin-right:auto;}
+  .side .sec,.side .alerts,.side .user{display:none;}
+  .nav{width:auto;}
+  .main{padding:16px 14px 60px;}
+}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow);}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 18px;flex-wrap:wrap;}
+.card-h h2{margin:0;font-size:16px;}
+.tabs{display:flex;background:var(--bg);border-radius:8px;padding:3px;gap:2px;}
+.tab{border:none;background:transparent;padding:6px 11px;border-radius:6px;font-size:12px;font-weight:600;color:var(--sub);}
+.tab.active{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+.tablewrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{font-size:11px;color:var(--sub);font-weight:600;text-align:left;padding:10px 14px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:#fafbfd;white-space:nowrap;}
+td{padding:12px 14px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:#f8f9fc;}
+tbody tr.sel{background:#eef3ff;}
+.merch{display:flex;align-items:center;gap:10px;}
+.mic{width:30px;height:30px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--sub);}
+.merch b{font-size:12.5px;display:block;}
+.merch span{font-size:11px;color:var(--muted);}
+.rs b{font-size:12px;display:block;margin-bottom:3px;}
+.pill{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10.5px;font-weight:700;}
+.pill.HIGH{background:var(--danger-bg);color:var(--danger);}
+.pill.MEDIUM{background:var(--warn-bg);color:var(--warn);}
+.pill.LOW{background:var(--good-bg);color:var(--good);}
+.st{display:inline-block;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.3px;}
+.st.FLAGGED{background:var(--danger-bg);color:var(--danger);}
+.st.APPROVED{background:var(--good-bg);color:var(--good);}
+.st.REVIEW{background:var(--info-bg);color:var(--info);}
+.empty{padding:28px;text-align:center;color:var(--muted);font-size:13px;}
+
+/* Detail panel */
+.panel{padding:18px;position:sticky;top:16px;}
+.panel h3{margin:0 0 14px;font-size:16px;display:flex;align-items:center;gap:8px;}
+.risk-box{border-radius:10px;padding:14px;margin-bottom:16px;}
+.risk-box.HIGH{background:var(--danger-bg);}
+.risk-box.MEDIUM{background:var(--warn-bg);}
+.risk-box.LOW{background:var(--good-bg);}
+.risk-top{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:600;}
+.risk-top b{font-size:22px;}
+.risk-box.HIGH b{color:var(--danger);} .risk-box.MEDIUM b{color:var(--warn);} .risk-box.LOW b{color:var(--good);}
+.bar{height:5px;border-radius:4px;background:rgba(0,0,0,.08);margin:8px 0;overflow:hidden;}
+.bar i{display:block;height:100%;border-radius:4px;}
+.risk-box.HIGH .bar i{background:var(--danger);} .risk-box.MEDIUM .bar i{background:var(--warn);} .risk-box.LOW .bar i{background:var(--good);}
+.risk-box small{font-size:11.5px;color:var(--sub);}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.k{font-size:10px;color:var(--sub);font-weight:700;letter-spacing:.4px;text-transform:uppercase;}
+.v{font-size:13px;font-weight:700;margin-top:3px;word-break:break-all;}
+.info{background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:8px;}
+.info b{font-size:13px;display:block;}
+.info span{font-size:11.5px;color:var(--sub);}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 14px;}
+.chip{background:var(--warn-bg);color:var(--warn);font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;}
+.reason{font-size:12px;color:var(--sub);line-height:1.5;margin-bottom:14px;}
+textarea,input[type=text]{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13px;font-family:inherit;background:#fff;color:var(--text);}
+textarea{min-height:64px;resize:vertical;}
+textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.actions .btn{flex:1;min-width:90px;}
+
+/* Risk analysis view */
+.pad{padding:0 18px 18px;}
+.grid2{display:grid;grid-template-columns:1fr;gap:16px;margin-top:16px;}
+@media(min-width:760px){.grid2{grid-template-columns:1fr 1fr;}}
+.chartwrap{position:relative;height:210px;padding:0 18px 18px;}
+.uploadzone{border:1.5px dashed var(--border);border-radius:12px;padding:24px;text-align:center;color:var(--sub);font-size:13px;cursor:pointer;background:var(--bg);margin:0 18px;}
+.uploadzone:hover{border-color:var(--accent);}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+.controls .grow{flex:1;min-width:160px;}
+.result{margin:14px 18px 0;padding:14px 16px;border-radius:10px;display:none;}
+.result.low{background:var(--good-bg);} .result.medium{background:var(--warn-bg);} .result.high{background:var(--danger-bg);}
+.result .rval{font-size:20px;font-weight:800;margin:2px 0;}
+.foot{font-size:11.5px;color:var(--muted);margin-top:26px;line-height:1.6;}
+.note{background:#eef4ff;border:1px solid #d7e4ff;border-radius:10px;padding:10px 14px;font-size:12.5px;color:#274a8f;margin-bottom:18px;}
+.hidden{display:none !important;}
+
+/* Action column + Blocked review queue */
+.btn.pay{height:30px;padding:0 12px;background:var(--accent);border-color:var(--accent);color:#fff;font-size:11.5px;}
+.btn.pay:hover{background:#2f49b8;}
+.st.PENDING{background:var(--warn-bg);color:var(--warn);}
+.paydone{font-size:11px;color:var(--muted);font-weight:600;}
+.blockedBtn{position:relative;}
+.badge{background:var(--danger);color:#fff;border-radius:20px;font-size:11px;padding:1px 7px;margin-left:4px;}
+.overlay{position:fixed;inset:0;background:rgba(15,17,24,.45);display:none;align-items:flex-start;justify-content:center;z-index:200;padding:40px 16px;}
+.modal{background:#fff;border-radius:16px;max-width:760px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
+.modal-head h3{margin:0;font-size:16px;}
+.closeX{background:transparent;border:none;color:var(--sub);font-size:22px;padding:0 6px;}
+.modal-body{padding:14px 20px 20px;display:grid;gap:12px;}
+.blocked-card{border:1px solid var(--border);border-radius:12px;padding:14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 14px;align-items:start;}
+.blocked-title{font-size:13px;font-weight:700;overflow-wrap:anywhere;}
+.blocked-meta{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:6px;font-size:12px;color:var(--sub);}
+.blocked-score{font-weight:800;color:var(--danger);font-size:14px;white-space:nowrap;}
+.blocked-reason{grid-column:1/-1;background:var(--danger-bg);border-radius:8px;padding:9px 10px;font-size:12px;line-height:1.45;color:#8f2929;overflow-wrap:anywhere;}
+.blocked-actions{grid-column:1/-1;display:flex;justify-content:flex-end;}
+.blocked-actions .btn{height:40px;padding:0 18px;}
+@media(max-width:480px){.overlay{padding:12px 8px;}.blocked-actions .btn{width:100%;}}
+
+/* Toasts */
+.toasts{position:fixed;top:16px;right:16px;z-index:100;display:flex;flex-direction:column;gap:8px;max-width:320px;}
+.toast{background:#1c1f2a;color:#fff;border-radius:10px;padding:12px 14px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.2);animation:slidein .25s ease-out;line-height:1.45;}
+@keyframes slidein{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+</style>
+</head>
+<body>
+<div class="toasts" id="toasts"></div>
+
+<div class="overlay" id="overlay" onclick="if(event.target===this) closeModal()">
+  <div class="modal">
+    <div class="modal-head"><h3>Blocked transactions · Review queue</h3><button class="closeX" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body" id="blockedBody" aria-live="polite"></div>
+    <div class="empty" id="blockedEmpty">No blocked users yet.</div>
+  </div>
+</div>
+
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">FS</div><div><b>FinShield</b><span>Risk Management<br>Platform</span></div></div>
+    <div class="sec">Analysis Tools</div>
+    <button class="nav active" id="navDash" onclick="showView('dash')">▦ Dashboard</button>
+    <button class="nav" id="navRisk" onclick="showView('risk')">△ Risk Analysis</button>
+    <div class="alerts">
+      <div class="sec">Alert Status</div>
+      <div class="alertrow"><span class="l"><i class="dot" style="background:#e07b7b"></i>High Risk</span><span class="count c-high" id="sbHigh">0</span></div>
+      <div class="alertrow"><span class="l"><i class="dot" style="background:#e0b43c"></i>Medium Risk</span><span class="count c-med" id="sbMed">0</span></div>
+      <div class="alertrow"><span class="l"><i class="dot" style="background:#4f7be0"></i>Under Review</span><span class="count c-rev" id="sbRev">0</span></div>
+    </div>
+    <div class="user"><div class="avatar">SA</div><div><b>Senior Analyst</b><span>Risk Management Team</span></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div>
+        <h1>Fraud Detection Dashboard</h1>
+        <p>Real-time transaction monitoring and risk analysis · <span id="subStats">0 txns · $0</span></p>
+      </div>
+      <div class="right">
+        <button class="btn" id="btnStream" onclick="toggleStream()">▶ Start stream</button>
+        <button class="btn" onclick="attackBurst()">⚡ Attack burst</button>
+        <button class="btn blockedBtn" onclick="openModal()">🚫 Blocked <span class="badge" id="blockedBadge">0</span></button>
+        <button class="btn" onclick="exportReport()">⤓ Export Report</button>
+        <span class="live off" id="liveBadge">Stream Paused</span>
+      </div>
+    </div>
+
+    <!-- DASHBOARD VIEW -->
+    <div id="viewDash">
+      <div class="kpis">
+        <div class="kpi"><div><div class="label">Flagged Transactions</div><div class="val" id="kFlagged">0</div><div class="delta" id="kFlaggedD">&nbsp;</div></div><div class="kicon" style="background:var(--danger-bg);color:var(--danger)">⚠</div></div>
+        <div class="kpi"><div><div class="label">High Risk Alerts</div><div class="val" id="kHigh">0</div><div class="delta" id="kHighD">&nbsp;</div></div><div class="kicon" style="background:var(--warn-bg);color:var(--warn)">🛡</div></div>
+        <div class="kpi"><div><div class="label">Under Review</div><div class="val" id="kRev">0</div><div class="delta">awaiting analyst</div></div><div class="kicon" style="background:var(--info-bg);color:var(--info)">◔</div></div>
+        <div class="kpi"><div><div class="label">Avg Risk Score</div><div class="val" id="kAvg">0%</div><div class="delta">model ROC-AUC 0.75</div></div><div class="kicon" style="background:#f1eaff;color:#7b4fe0">↗</div></div>
+      </div>
+
+      <div class="layout">
+        <div class="card">
+          <div class="card-h"><h2>Flagged Transactions</h2>
+            <div class="tabs" id="tabs">
+              <button class="tab active" data-f="ALL" onclick="setFilter('ALL')">All</button>
+              <button class="tab" data-f="FLAGGED" onclick="setFilter('FLAGGED')">Flagged</button>
+              <button class="tab" data-f="REVIEW" onclick="setFilter('REVIEW')">Under Review</button>
+              <button class="tab" data-f="APPROVED" onclick="setFilter('APPROVED')">Approved</button>
+            </div>
+          </div>
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>Transaction</th><th>Risk Score</th><th>Amount</th><th>Status</th><th>Time</th><th>Payment</th></tr></thead>
+              <tbody id="txBody"></tbody>
+            </table>
+          </div>
+          <div class="empty hidden" id="txEmpty">No transactions here yet. Start the stream or run an attack burst.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RISK ANALYSIS VIEW -->
+    <div id="viewRisk" class="hidden">
+      <div class="note">Synthetic data, not real payment records — a portfolio project. Charts come from running the analysis code; the stream, CSV lookup and flagging run in your browser using a transparent rule-based approximation of the trained model.</div>
+
+      <div class="card">
+        <div class="card-h"><h2>Upload dataset &amp; check transaction</h2></div>
+        <div class="uploadzone" onclick="document.getElementById('csvfile').click()">
+          Click to upload a CSV (needs a <code>transaction_id</code> column). Upload is lookup-only — rows are not scored or flagged until you check one.
+          <input type="file" id="csvfile" accept=".csv" style="display:none" onchange="handleCsv(event)">
+        </div>
+        <div id="csvSummary" style="margin:12px 18px 0;font-size:13px;color:var(--sub);"></div>
+        <div style="margin:14px 18px 0;">
+          <div class="k" style="margin-bottom:6px">Check transaction by ID</div>
+          <div class="controls"><div class="grow"><input id="lookupId" type="text" placeholder="Enter transaction ID (e.g. TXN1001)" autocomplete="off"></div><button class="btn primary" onclick="checkTransactionById()">Check transaction</button></div>
+        </div>
+        <div class="result" id="lookupResult">
+          <div class="k">Risk score</div>
+          <div class="rval" id="lookupScore">-</div>
+          <div id="lookupAction" style="font-size:13px;color:var(--sub);">-</div>
+          <div class="reason" id="lookupReason" style="margin:6px 0 0"></div>
+        </div>
+        <div style="margin:14px 18px 18px;"><button class="btn" id="toggleCsvHistory" onclick="toggleCsvHistory()" disabled>Show full transaction history</button></div>
+        <div id="csvHistoryWrap" class="tablewrap hidden" style="padding-bottom:6px">
+          <table><thead><tr><th>Transaction ID</th><th>Amount</th><th>Payment</th><th>Risk</th><th>Score</th><th>Reason</th></tr></thead><tbody id="csvBody"></tbody></table>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px">
+        <div class="card-h"><h2>Chargeback value by merchant category</h2></div>
+        <div class="chartwrap"><canvas id="c1" role="img" aria-label="Bar chart of chargeback value by merchant category, Crypto Exchange highest"></canvas></div>
+      </div>
+      <div class="grid2">
+        <div class="card"><div class="card-h"><h2>Fraud rate by velocity</h2></div><div class="chartwrap"><canvas id="c2" role="img" aria-label="Fraud rate 24.4% under 5 minutes, 1.7% baseline"></canvas></div></div>
+        <div class="card"><div class="card-h"><h2>Risk bucket calibration</h2></div><div class="chartwrap"><canvas id="c3" role="img" aria-label="Fraud rate rises from 0.64% Low to 5.59% High"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="foot">
+      Scoring runs in this browser using a transparent rule-based approximation, not a live call to the trained scikit-learn model. A HIGH risk result is a suspicion, not proof of fraud. “Confirm &amp; Pay” only marks a transaction as legitimate in this demo; no real payment is processed. Use human review before real payment decisions.
+    </div>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+/* ---------------- Risk engine (unchanged logic; added short `tags` for chips) ---------------- */
+const PMODE_WEIGHT={Card:0.02, Netbanking:0.02, UPI:0.005, Wallet:0.01};
+function computeRisk(p){
+  const oddHour=(p.hour>=0 && p.hour<=5)?1:0;
+  const ratioToAvg=p.amt/(p.avgamt+0.00001);
+  const velocityFlag=(p.gap<30 && p.amt>500)?1:0;
+  const deviceMismatch=(p.devSwitch && p.gap<300)?1:0;
+  const microThenLarge=(p.prevamt<5 && p.amt>5*p.avgamt && p.gap<600)?1:0;
+  let score=p.catRate*4.0 + oddHour*0.13 + Math.min(ratioToAvg/10,0.15) + p.devSwitch*0.03 + (PMODE_WEIGHT[p.pmode]||0);
+  score+=velocityFlag*0.35 + deviceMismatch*0.20 + microThenLarge*0.30;
+  score=Math.max(0,Math.min(1,score));
+  const flags=[], tags=[];
+  if(velocityFlag){flags.push(`high-value payment ($${p.amt.toFixed(2)}) only ${p.gap} seconds after the previous transaction`);tags.push('High Velocity');}
+  if(deviceMismatch){flags.push(`device change detected ${p.gap} seconds after the previous transaction`);tags.push('Device Mismatch');}
+  if(microThenLarge){flags.push(`small previous payment ($${p.prevamt.toFixed(2)}) followed by $${p.amt.toFixed(2)} versus an average of $${p.avgamt.toFixed(2)}`);tags.push('Micro → Large');}
+  if(oddHour){flags.push(`transaction at unusual hour ${String(p.hour).padStart(2,'0')}:00 (12 AM–5 AM)`);tags.push('Time Anomaly');}
+  if(ratioToAvg>=3){flags.push(`amount $${p.amt.toFixed(2)} is ${ratioToAvg.toFixed(1)}× the average $${p.avgamt.toFixed(2)}`);tags.push('Amount Spike');}
+  if(p.catRate>=0.03){flags.push(`merchant category has elevated historical fraud risk (${(p.catRate*100).toFixed(1)}% category fraud rate)`);tags.push('Merchant Risk');}
+  const bucket=score>0.75?'HIGH':(score>=0.30?'MEDIUM':'LOW');
+  const reason=flags.length?flags.join('; '):(score>=0.30?'Combined risk score crossed the review threshold; no single rule dominated.':'No specific high-risk rule matched this transaction.');
+  return {score,flags,tags,bucket,reason};
+}
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function showToast(msg){
+  const c=document.getElementById('toasts'),t=document.createElement('div');
+  t.className='toast'; t.textContent=msg; c.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300);},4000);
+}
+
+/* ---------------- State ---------------- */
+let txns=[];            // newest first
+let selectedId=null;
+let filter='ALL';
+let streaming=false, streamTimer=null, volume=0, seq=0;
+let uploadedTransactions=[];
+const statusOf=b=>b==='HIGH'?'FLAGGED':(b==='MEDIUM'?'REVIEW':'APPROVED');
+const statusLabel={FLAGGED:'FLAGGED',REVIEW:'UNDER REVIEW',APPROVED:'APPROVED'};
+const fmtTime=d=>d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});
+const money=n=>'$'+Number(n).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function addTxn(t){
+  if(txns.some(x=>x.transactionId===t.transactionId)) return txns.find(x=>x.transactionId===t.transactionId);
+  t.id=++seq; t.time=new Date(); t.status=statusOf(t.r.bucket); t.notes='';
+  txns.unshift(t); if(txns.length>200) txns.pop();
+  volume+=t.amt;
+  if(t.status==='FLAGGED') showToast('🚫 FLAGGED · '+t.user+' · '+t.transactionId+' · '+(t.r.score*100).toFixed(0)+'% risk. '+shortReason(t.r.reason));
+  if(!selectedId) selectedId=t.id;
+  render();
+  return t;
+}
+function shortReason(reason){
+  const parts=String(reason||'').split(';').map(x=>x.trim()).filter(Boolean);
+  let s=parts.slice(0,2).join('; '); if(parts.length>2) s+='; additional risk signals';
+  return s.length>190?s.slice(0,187).trimEnd()+'…':(s||'No specific rule reason available');
+}
+
+/* ---------------- Rendering ---------------- */
+function render(){
+  const flagged=txns.filter(t=>t.status==='FLAGGED').length;
+  const high=txns.filter(t=>t.r.bucket==='HIGH').length;
+  const med=txns.filter(t=>t.r.bucket==='MEDIUM').length;
+  const rev=txns.filter(t=>t.status==='REVIEW').length;
+  const avg=txns.length?txns.reduce((s,t)=>s+t.r.score,0)/txns.length:0;
+  const set=(id,v)=>document.getElementById(id).textContent=v;
+  set('kFlagged',flagged); set('kHigh',high); set('kRev',rev); set('kAvg',(avg*100).toFixed(0)+'%');
+  set('kFlaggedD',txns.length?((flagged/txns.length)*100).toFixed(0)+'% of '+txns.length+' txns':'\u00a0');
+  set('kHighD',txns.length?'peak '+(Math.max(...txns.map(t=>t.r.score))*100).toFixed(0)+'% score':'\u00a0');
+  set('sbHigh',high); set('sbMed',med); set('sbRev',rev);
+  set('subStats',txns.length+' txns · $'+Math.round(volume).toLocaleString());
+  set('blockedBadge',flagged);
+  renderTable(); renderPanel(); renderBlocked();
+}
+function confirmPay(id){setStatus(id,'APPROVED');}
+function openModal(){document.getElementById('overlay').style.display='flex';renderBlocked();}
+function closeModal(){document.getElementById('overlay').style.display='none';}
+function renderBlocked(){
+  const list=txns.filter(t=>t.status==='FLAGGED').slice(0,100);
+  document.getElementById('blockedEmpty').style.display=list.length?'none':'block';
+  document.getElementById('blockedBody').innerHTML=list.map(t=>`
+    <article class="blocked-card">
+      <div><div class="blocked-title">User ID: ${esc(t.user)} <span style="font-weight:500;color:var(--sub)">· ${t.time.toLocaleTimeString()}</span></div>
+        <div class="blocked-meta"><span>Transaction: ${esc(t.transactionId)}</span><span>Amount: $${Number(t.amt).toLocaleString()}</span><span>Payment: ${esc(t.pmode)}</span></div></div>
+      <div class="blocked-score">${(t.r.score*100).toFixed(0)}% risk</div>
+      <div class="blocked-reason"><strong>Reason:</strong> ${esc(shortReason(t.r.reason))}</div>
+      <div class="blocked-actions"><button class="btn pay" onclick="confirmPay(${t.id})">Confirm &amp; Pay</button></div>
+    </article>`).join('');
+}
+function renderTable(){
+  const body=document.getElementById('txBody');
+  const rows=txns.filter(t=>filter==='ALL'||t.status===filter).slice(0,60);
+  document.getElementById('txEmpty').classList.toggle('hidden',rows.length>0);
+  body.innerHTML=rows.map(t=>`
+    <tr class="${t.id===selectedId?'sel':''}" onclick="selectTxn(${t.id})">
+      <td><div class="merch"><div class="mic">${esc(t.cat[0])}</div><div><b>${esc(t.cat)}</b><span>${esc(t.user)} · ${esc(t.pmode)}</span></div></div></td>
+      <td class="rs"><b>${(t.r.score*100).toFixed(0)}%</b><span class="pill ${t.r.bucket}">${t.r.bucket==='HIGH'?'High Risk':t.r.bucket==='MEDIUM'?'Medium Risk':'Low Risk'}</span></td>
+      <td><b>${money(t.amt)}</b></td>
+      <td><span class="st ${t.status}">${statusLabel[t.status]}</span></td>
+      <td style="color:var(--sub);font-size:12px">${fmtTime(t.time)}</td>
+      <td>${t.status==='APPROVED'?'<span class="st APPROVED">✓ PAID</span>':'<span class="st PENDING">PENDING</span>'}</td>
+    </tr>`).join('');
+}
+function renderPanel(){
+  const el=document.getElementById('panel');
+  if(!el) return; // detail panel removed from layout
+  const t=txns.find(x=>x.id===selectedId);
+  if(!t){el.innerHTML='<h3>⚠ Transaction Analysis</h3><div class="empty">Select a transaction to see its risk breakdown.</div>';return;}
+  const lvl={HIGH:'High risk — requires immediate attention',MEDIUM:'Medium risk — step-up authentication / review',LOW:'Low risk — eligible for approval'}[t.r.bucket];
+  el.innerHTML=`
+    <h3>⚠ Transaction Analysis</h3>
+    <div class="risk-box ${t.r.bucket}">
+      <div class="risk-top"><span>Risk Assessment</span><b>${(t.r.score*100).toFixed(0)}%</b></div>
+      <div class="bar"><i style="width:${(t.r.score*100).toFixed(0)}%"></i></div>
+      <small>${lvl}</small>
+    </div>
+    <div class="two"><div><div class="k">Transaction ID</div><div class="v">${esc(t.transactionId)}</div></div><div><div class="k">Amount</div><div class="v">${money(t.amt)}</div></div></div>
+    <div class="info"><b>${esc(t.user)}</b><span>User ID</span></div>
+    <div class="info"><b>${esc(t.cat)}</b><span>Merchant category</span></div>
+    <div class="info"><b>${esc(t.pmode)}</b><span>Payment mode</span></div>
+    <div class="info"><b>${fmtTime(t.time)}</b><span>Transaction time</span></div>
+    <div class="k" style="margin-top:14px">Risk Factors</div>
+    <div class="chips">${t.r.tags.length?t.r.tags.map(x=>`<span class="chip">${esc(x)}</span>`).join(''):'<span style="font-size:12px;color:var(--muted)">None triggered</span>'}</div>
+    <div class="reason"><b>Reason:</b> ${esc(t.r.reason)}</div>
+    <div class="k" style="margin-bottom:6px">Analyst Notes</div>
+    <textarea placeholder="Add your analysis notes here..." oninput="saveNote(${t.id},this.value)">${esc(t.notes)}</textarea>
+    <div class="actions">
+      <button class="btn good" onclick="setStatus(${t.id},'APPROVED')" ${t.status==='APPROVED'?'disabled':''}>Confirm &amp; Pay</button>
+      <button class="btn" onclick="setStatus(${t.id},'REVIEW')" ${t.status==='REVIEW'?'disabled':''}>Review</button>
+      <button class="btn danger" onclick="setStatus(${t.id},'FLAGGED')" ${t.status==='FLAGGED'?'disabled':''}>Block</button>
+    </div>`;
+}
+function selectTxn(id){selectedId=id;renderTable();renderPanel();}
+function saveNote(id,v){const t=txns.find(x=>x.id===id);if(t)t.notes=v;}
+function setStatus(id,s){
+  const t=txns.find(x=>x.id===id); if(!t) return;
+  t.status=s; render();
+  showToast(s==='APPROVED'?'✓ '+t.transactionId+' marked legitimate and approved in demo. No real payment was processed.':s==='FLAGGED'?'🚫 '+t.transactionId+' blocked.':'◔ '+t.transactionId+' moved to review.');
+}
+function setFilter(f){
+  filter=f;
+  document.querySelectorAll('#tabs .tab').forEach(b=>b.classList.toggle('active',b.dataset.f===f));
+  renderTable();
+}
+function showView(v){
+  document.getElementById('viewDash').classList.toggle('hidden',v!=='dash');
+  document.getElementById('viewRisk').classList.toggle('hidden',v!=='risk');
+  document.getElementById('navDash').classList.toggle('active',v==='dash');
+  document.getElementById('navRisk').classList.toggle('active',v==='risk');
+  if(v==='risk') initCharts();
+}
+function exportReport(){
+  if(!txns.length){showToast('Nothing to export yet.');return;}
+  const head=['transaction_id','user_id','category','payment_mode','amount','risk_score','risk_level','status','reason','time'];
+  const q=v=>'"'+String(v).replace(/"/g,'""')+'"';
+  const rows=txns.map(t=>[t.transactionId,t.user,t.cat,t.pmode,t.amt,(t.r.score*100).toFixed(1)+'%',t.r.bucket,statusLabel[t.status],t.r.reason,t.time.toISOString()].map(q).join(','));
+  const blob=new Blob([head.join(',')+'\n'+rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='finshield-report.csv'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* ---------------- Live stream ---------------- */
+const CATS=[['Crypto Exchange',0.040],['Gift Cards',0.035],['Gaming',0.022],['Electronics',0.015],['Travel',0.010],['Fashion',0.004],['Subscriptions',0.003],['Food Delivery',0.002],['Grocery',0.001],['Utilities',0.0007]];
+const PMODES=['Card','UPI','Wallet','Netbanking'];
+function randTxn(attack){
+  const cat=CATS[Math.floor(Math.random()*CATS.length)];
+  const pmode=PMODES[Math.floor(Math.random()*PMODES.length)];
+  const amt=Math.round((Math.random()*400+10)*(attack?3:1));
+  const avgamt=amt/(0.7+Math.random()*0.6);
+  const prevamt=attack?1:Math.round(avgamt*(0.5+Math.random()));
+  const gap=attack?Math.floor(Math.random()*20):Math.floor(Math.random()*3000)+30;
+  const hour=Math.floor(Math.random()*24);
+  const devSwitch=attack?1:(Math.random()<0.03?1:0);
+  const r=computeRisk({amt,prevamt,avgamt,gap,catRate:cat[1],hour,devSwitch,pmode});
+  return {user:'U'+Math.floor(Math.random()*9000+1000),transactionId:'LIVE-'+Date.now().toString(36).toUpperCase()+'-'+Math.floor(Math.random()*900+100),cat:cat[0],amt,pmode,r};
+}
+function setLive(on){
+  const b=document.getElementById('liveBadge'); b.textContent=on?'System Active':'Stream Paused'; b.classList.toggle('off',!on);
+  document.getElementById('btnStream').textContent=on?'❚❚ Pause stream':'▶ Start stream';
+}
+function toggleStream(){
+  streaming=!streaming; setLive(streaming);
+  if(streaming){const tick=()=>{addTxn(randTxn(false));streamTimer=setTimeout(tick,600);};tick();}
+  else clearTimeout(streamTimer);
+}
+function attackBurst(){
+  if(!streaming) toggleStream();
+  let i=0; const burst=setInterval(()=>{addTxn(randTxn(true));if(++i>=6)clearInterval(burst);},200);
+}
+
+/* ---------------- CSV lookup ---------------- */
+function handleCsv(evt){
+  const file=evt.target.files[0]; if(!file) return;
+  Papa.parse(file,{header:true,dynamicTyping:true,skipEmptyLines:true,transformHeader:h=>h.trim(),complete:res=>{
+    if(res.errors&&res.errors.length) showToast('CSV warning: '+res.errors[0].message);
+    uploadedTransactions=(res.data||[]).filter(r=>r.transaction_id!==undefined&&String(r.transaction_id).trim()!=='');
+    document.getElementById('toggleCsvHistory').disabled=!uploadedTransactions.length;
+    document.getElementById('csvHistoryWrap').classList.add('hidden');
+    document.getElementById('toggleCsvHistory').textContent='Show full transaction history';
+    document.getElementById('csvSummary').textContent=uploadedTransactions.length
+      ?`Loaded ${uploadedTransactions.length} transactions. Enter a transaction ID above to check one, or show the full history.`
+      :'CSV loaded, but no transaction_id column was found. Add a transaction_id column to enable lookup.';
+    if(!uploadedTransactions.length) showToast('No transaction_id column found.');
+  }});
+}
+function transactionFeatures(row){
+  const amt=Number(row.amount)||0, blank=v=>v===''||v===undefined||v===null;
+  return {amt,prevamt:Number(row.prev_amount)||0,avgamt:Number(row.avg_amount)||amt||1,
+    gap:blank(row.seconds_since_last)?9999:(Number(row.seconds_since_last)||0),
+    catRate:blank(row.category_fraud_rate)?0.01:(Number(row.category_fraud_rate)||0.01),
+    hour:blank(row.hour)?12:(Number(row.hour)||0),
+    devSwitch:(String(row.device_switch).toLowerCase()==='true'||Number(row.device_switch)===1)?1:0,
+    pmode:row.payment_mode||'Card'};
+}
+function toggleCsvHistory(){
+  const wrap=document.getElementById('csvHistoryWrap'),btn=document.getElementById('toggleCsvHistory');
+  const show=wrap.classList.contains('hidden');
+  if(show){
+    document.getElementById('csvBody').innerHTML=uploadedTransactions.map(row=>{
+      const p=transactionFeatures(row),r=computeRisk(p);
+      return `<tr style="cursor:default"><td>${esc(row.transaction_id)}</td><td>$${p.amt.toLocaleString()}</td><td>${esc(p.pmode)}</td><td><span class="pill ${r.bucket}">${r.bucket}</span></td><td>${(r.score*100).toFixed(0)}%</td><td style="white-space:normal;min-width:190px">${esc(shortReason(r.reason))}</td></tr>`;
+    }).join('');
+  }
+  wrap.classList.toggle('hidden',!show);
+  btn.textContent=show?'Hide full transaction history':'Show full transaction history';
+}
+function checkTransactionById(){
+  const id=document.getElementById('lookupId').value.trim();
+  const box=document.getElementById('lookupResult');
+  const out=(cls,score,action,reason)=>{box.style.display='block';box.className='result '+cls;
+    document.getElementById('lookupScore').textContent=score;
+    document.getElementById('lookupAction').textContent=action;
+    document.getElementById('lookupReason').textContent=reason;};
+  if(!id){showToast('Enter a transaction ID first.');return;}
+  if(!uploadedTransactions.length){out('medium','No transaction data loaded','Upload a CSV containing a transaction_id column first.','');return;}
+  const row=uploadedTransactions.find(r=>String(r.transaction_id).trim().toLowerCase()===id.toLowerCase());
+  if(!row){out('medium','Not found','No matching transaction ID was found in the uploaded CSV.','Check the ID or upload the CSV containing that transaction.');return;}
+  const p=transactionFeatures(row),r=computeRisk(p);
+  const actions={HIGH:'HIGH RISK — hold for human review',MEDIUM:'MEDIUM RISK — step-up authentication / review',LOW:'LOW RISK — eligible for approval'};
+  out(r.bucket.toLowerCase(),(r.score*100).toFixed(1)+'% · '+r.bucket+' RISK',actions[r.bucket],'Transaction: '+row.transaction_id+' · '+r.reason);
+  // Add to the dashboard table so it appears with the other transactions (deduped by ID)
+  const t=addTxn({user:String(row.user_id||row.userId||row.user||'Dataset user'),transactionId:String(row.transaction_id),cat:String(row.category||row.merchant_category||'Dataset'),amt:p.amt,pmode:p.pmode,r});
+  if(t) selectedId=t.id;
+}
+document.getElementById('lookupId').addEventListener('keydown',e=>{if(e.key==='Enter')checkTransactionById();});
+
+/* ---------------- Charts (created the first time Risk Analysis opens) ---------------- */
+let chartsReady=false;
+function initCharts(){
+  if(chartsReady) return; chartsReady=true;
+  Chart.defaults.color='#5c6270';
+  const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+  new Chart(document.getElementById('c1'),{type:'bar',data:{labels:['Crypto','Travel','Electronics','Gift Cards','Gaming','Fashion','Utilities','Grocery','Food Del.','Subs'],datasets:[{data:[2881865,751363,550704,315462,142015,91736,50148,31573,24117,21421],backgroundColor:'#3b5bdb',borderRadius:5}]},options:{...base,scales:{y:{ticks:{callback:v=>'$'+(v/1e6).toFixed(1)+'M'}}}}});
+  new Chart(document.getElementById('c2'),{type:'bar',data:{labels:['<5 min','5-30 min','30min-1day','>1 day'],datasets:[{data:[24.4,3.8,1.7,1.7],backgroundColor:'#e88a3c',borderRadius:5}]},options:{...base,scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+  new Chart(document.getElementById('c3'),{type:'bar',data:{labels:['Low','Medium','High'],datasets:[{data:[0.64,3.71,5.59],backgroundColor:['#1f8a44','#b5790a','#d33b3b'],borderRadius:5}]},options:{...base,scales:{y:{ticks:{callback:v=>v+'%'}}}}});
+}
+
+/* ---------------- Boot: seed a few rows so the page isn't empty ---------------- */
+for(let i=0;i<8;i++){const t=randTxn(false);t.transactionId='SEED-'+(1000+i);addTxn(t);}
+selectedId=(txns.find(t=>t.status==='FLAGGED')||txns[0]).id;
+render();
+</script>
+</body>
+</html>
